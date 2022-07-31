@@ -39,7 +39,7 @@
 // Macros to check collisions
 #define CHECKCOL_XY_XYXY(x1, y1, x2, y2, x3, y3) (x1 >= x2 && y1 >= y2 && x1 <= x3 && y1 <= y3)
 
-SDL_Rect map;
+SDL_Rect cell;
 SDL_Rect character;
 
 int WINDOW_WIDTH = 640;
@@ -47,7 +47,7 @@ int WINDOW_HEIGHT = 480;
 
 int main(void)
 {
-    sleep(1); // Sleep 1 seconds, because the window appears too fast that I can't change the workspace.
+    sleep(1); // Sleep 1 seconds, because the game starts so fast that I can't change the workspace.
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
     {
         printf("error initializing SDL: %s\n", SDL_GetError());
@@ -66,7 +66,7 @@ int main(void)
     SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN);
 
     // Character
-    surface = IMG_Load("textures/mover.png");
+    surface = IMG_Load("textures/PUSH_CELL.png");
 
     SDL_Texture *chartex = SDL_CreateTextureFromSurface(rend, surface);
 
@@ -75,21 +75,63 @@ int main(void)
     character.x = GRID_CENTER_X * CELL_SIZE;
     character.y = GRID_CENTER_Y * CELL_SIZE;
 
-    // Background cell
-    surface = IMG_Load("textures/background.png");
-
-    SDL_Texture *maptex = SDL_CreateTextureFromSurface(rend, surface);
+    // Cells
+    surface = IMG_Load("textures/NOTHING.png");
+    SDL_Texture *tex_NOTHING = SDL_CreateTextureFromSurface(rend, surface);
+    surface = IMG_Load("textures/MOVER_CELL.png");
+    SDL_Texture *tex_MOVER_CELL = SDL_CreateTextureFromSurface(rend, surface);
+    surface = IMG_Load("textures/GENERATOR_CELL.png");
+    SDL_Texture *tex_GENERATOR_CELL = SDL_CreateTextureFromSurface(rend, surface);
+    surface = IMG_Load("textures/ROTATOR_CELL_CW.png");
+    SDL_Texture *tex_ROTATOR_CELL_CW = SDL_CreateTextureFromSurface(rend, surface);
+    surface = IMG_Load("textures/ROTATOR_CELL_CCW.png");
+    SDL_Texture *tex_ROTATOR_CELL_CCW = SDL_CreateTextureFromSurface(rend, surface);
+    surface = IMG_Load("textures/PUSH_CELL.png");
+    SDL_Texture *tex_PUSH_CELL = SDL_CreateTextureFromSurface(rend, surface);
+    surface = IMG_Load("textures/SLIDE_CELL.png");
+    SDL_Texture *tex_SLIDE_CELL = SDL_CreateTextureFromSurface(rend, surface);
+    surface = IMG_Load("textures/ENEMY_CELL.png");
+    SDL_Texture *tex_ENEMY_CELL = SDL_CreateTextureFromSurface(rend, surface);
+    surface = IMG_Load("textures/IMMOBILE_CELL.png");
+    SDL_Texture *tex_IMMOBILE_CELL = SDL_CreateTextureFromSurface(rend, surface);
+    surface = IMG_Load("textures/TRASH_CELL.png");
+    SDL_Texture *tex_TRASH_CELL = SDL_CreateTextureFromSurface(rend, surface);
     SDL_FreeSurface(surface);
 
-    map.x = 0;
-    map.y = 0;
-    map.w = CELL_SIZE;
-    map.h = CELL_SIZE;
+    SDL_Texture *cell_map[10] = {
+        tex_NOTHING,
+        tex_MOVER_CELL,
+        tex_GENERATOR_CELL,
+        tex_ROTATOR_CELL_CW,
+        tex_ROTATOR_CELL_CCW,
+        tex_PUSH_CELL,
+        tex_SLIDE_CELL,
+        tex_ENEMY_CELL,
+        tex_IMMOBILE_CELL,
+        tex_TRASH_CELL,
+    };
+
+    // Current cell
+    cell.x = 0;
+    cell.y = 0;
+    cell.w = CELL_SIZE;
+    cell.h = CELL_SIZE;
 
     // Grid
-    // TODO: Render the game by grid
-    cmbe_cell_t *grid = malloc(sizeof(cmbe_cell_t) * GRID_WIDTH * GRID_HEIGHT);
-    memset(grid, 0, sizeof(cmbe_cell_t) * GRID_WIDTH * GRID_HEIGHT);
+    int grid[GRID_WIDTH * GRID_HEIGHT];
+    memset(grid, 0, GRID_WIDTH * GRID_HEIGHT * sizeof(int));
+
+    // For testing
+    grid[0] = 0;
+    grid[1] = 1;
+    grid[2] = 2;
+    grid[3] = 3;
+    grid[4] = 4;
+    grid[5] = 5;
+    grid[6] = 6;
+    grid[7] = 7;
+    grid[8] = 8;
+    grid[9] = 9;
 
     int close = 0;
     int grabbing = 0;
@@ -172,23 +214,23 @@ int main(void)
             character.y = FIT_POS(character.y + (CELL_SIZE / 2));
         }
 
+        SDL_SetRenderDrawColor(rend, 41, 41, 41, 255);
         SDL_RenderClear(rend);
 
-        // Render map
+        // Render cells
         int i, j;
-        map.x = 0;
-        for (i = 0; i < GRID_WIDTH * CELL_SIZE; i += 1)
+        cell.y = 0;
+        for (i = 0; i < GRID_HEIGHT; i++)
         {
-            map.y = 0;
-            for (j = 0; j < GRID_HEIGHT * CELL_SIZE; j += 1)
+            cell.x = 0;
+            for (j = 0; j < GRID_WIDTH; j++)
             {
-                SDL_RenderCopy(rend, maptex, NULL, &map);
-                map.y += map.h;
+                SDL_RenderCopy(rend, cell_map[grid[j + i * GRID_WIDTH]], NULL, &cell);
+                cell.x += cell.w;
             }
-            map.x += map.w;
+            cell.y += cell.h;
         }
 
-        SDL_SetRenderDrawColor(rend, 41, 41, 41, 255);
         SDL_RenderCopy(rend, chartex, NULL, &character);
         SDL_RenderPresent(rend);
         if (FPS_LIMIT) SDL_Delay(1000 / FPS_LIMIT); // FPS limit
