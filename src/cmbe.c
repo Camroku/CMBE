@@ -82,6 +82,7 @@ int main(void)
     map.h = CELL_SIZE;
 
     // Grid
+    // TODO: Render the game by grid
     cmbe_cell_t *grid = malloc(sizeof(cmbe_cell_t) * GRID_WIDTH * GRID_HEIGHT);
     memset(grid, 0, sizeof(cmbe_cell_t) * GRID_WIDTH * GRID_HEIGHT);
 
