@@ -22,6 +22,7 @@
 #include <SDL2/SDL_timer.h>
 #include <stdlib.h>
 #include "cmbe.h"
+#include <unistd.h>
 
 // Size of every cell
 #define CELL_SIZE (64)
@@ -43,6 +44,7 @@ int WINDOW_HEIGHT = 480;
 
 int main(void)
 {
+    sleep(1); // Sleep 1 seconds, because the window appears too fast that I can't change the workspace.
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
     {
         printf("error initializing SDL: %s\n", SDL_GetError());
