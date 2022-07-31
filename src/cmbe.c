@@ -24,6 +24,9 @@
 #include "cmbe.h"
 #include <unistd.h>
 
+// The FPS limit, 0 for disabled.
+#define FPS_LIMIT 144
+
 // Size of every cell
 #define CELL_SIZE (64)
 // Size and center of the grid
@@ -63,7 +66,7 @@ int main(void)
     SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN);
 
     // Character
-    surface = IMG_Load("textures/test.png");
+    surface = IMG_Load("textures/mover.png");
 
     SDL_Texture *chartex = SDL_CreateTextureFromSurface(rend, surface);
 
@@ -73,7 +76,7 @@ int main(void)
     character.y = GRID_CENTER_Y * CELL_SIZE;
 
     // Background cell
-    surface = IMG_Load("textures/cell.png");
+    surface = IMG_Load("textures/background.png");
 
     SDL_Texture *maptex = SDL_CreateTextureFromSurface(rend, surface);
     SDL_FreeSurface(surface);
@@ -184,9 +187,11 @@ int main(void)
             }
             map.x += map.w;
         }
+
+        SDL_SetRenderDrawColor(rend, 41, 41, 41, 255);
         SDL_RenderCopy(rend, chartex, NULL, &character);
         SDL_RenderPresent(rend);
-        SDL_Delay(1000 / 60);
+        if (FPS_LIMIT) SDL_Delay(1000 / FPS_LIMIT); // FPS limit
     }
 
     SDL_DestroyTexture(chartex);
