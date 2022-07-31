@@ -23,12 +23,17 @@
 #include <stdlib.h>
 #include "cmbe.h"
 
+// Size of every cell
 #define CELL_SIZE (64)
+// Size and center of the grid
 #define GRID_WIDTH ((int)(WINDOW_WIDTH / CELL_SIZE))
 #define GRID_HEIGHT ((int)(WINDOW_HEIGHT / CELL_SIZE))
 #define GRID_CENTER_X ((int)(WINDOW_WIDTH / 128) - 1)
 #define GRID_CENTER_Y ((int)(WINDOW_HEIGHT / 128) - 1)
+// Fit a position to the grid
 #define FIT_POS(pos) ((int)((pos) / CELL_SIZE) * CELL_SIZE)
+// Macros to check collisions
+#define CHECKCOL_XY_XYXY(x1, y1, x2, y2, x3, y3) (x1 >= x2 && y1 >= y2 && x1 <= x3 && y1 <= y3)
 
 SDL_Rect map;
 SDL_Rect character;
@@ -81,9 +86,13 @@ int main(void)
     memset(grid, 0, sizeof(cmbe_cell_t) * GRID_WIDTH * GRID_HEIGHT);
 
     int close = 0;
+    int grabbing = 0;
+    int grx, gry;
+    int mouse_x, mouse_y;
 
     while (!close)
     {
+        SDL_GetMouseState(&mouse_x, &mouse_y);
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -91,6 +100,17 @@ int main(void)
             {
             case SDL_QUIT:
                 close = 1;
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                if (CHECKCOL_XY_XYXY(mouse_x, mouse_y, character.x, character.y, character.x + CELL_SIZE, character.y + CELL_SIZE))
+                {
+                    grabbing = 1;
+                    grx = mouse_x - character.x;
+                    gry = mouse_y - character.y;
+                }
+                break;
+            case SDL_MOUSEBUTTONUP:
+                grabbing = 0;
                 break;
             case SDL_KEYDOWN:
                 switch (event.key.keysym.scancode)
@@ -117,7 +137,12 @@ int main(void)
             }
         }
 
-        // move map if character is out of screen and map is not at the end of the screen
+        if (grabbing)
+        {
+            character.x = mouse_x - grx;
+            character.y = mouse_y - gry;
+        }
+
         if (character.x < 0)
         {
             character.x = 0;
@@ -135,8 +160,11 @@ int main(void)
             character.y = WINDOW_HEIGHT - character.h;
         }
 
-        character.x = FIT_POS(character.x);
-        character.y = FIT_POS(character.y);
+        if (!grabbing)
+        {
+            character.x = FIT_POS(character.x + (CELL_SIZE / 2));
+            character.y = FIT_POS(character.y + (CELL_SIZE / 2));
+        }
 
         SDL_RenderClear(rend);
 

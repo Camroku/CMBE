@@ -20,6 +20,7 @@
 
 typedef enum
 {
+    NOTHING,
     MOVER_CELL,
     GENERATOR_CELL,
     ROTATOR_CELL_CW,
