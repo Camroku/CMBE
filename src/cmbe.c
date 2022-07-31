@@ -38,6 +38,8 @@
 #define FIT_POS(pos) ((int)((pos) / CELL_SIZE) * CELL_SIZE)
 // Macros to check collisions
 #define CHECKCOL_XY_XYXY(x1, y1, x2, y2, x3, y3) (x1 >= x2 && y1 >= y2 && x1 <= x3 && y1 <= y3)
+// Get cell index by x & y collision
+#define GET_CI_XY(x, y) ((int)((x) / CELL_SIZE) + ((int)((y) / CELL_SIZE) * GRID_WIDTH))
 
 SDL_Rect cell;
 SDL_Rect character;
@@ -66,9 +68,7 @@ int main(void)
     SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN);
 
     // Character
-    surface = IMG_Load("textures/PUSH_CELL.png");
-
-    SDL_Texture *chartex = SDL_CreateTextureFromSurface(rend, surface);
+    SDL_Texture *chartex;
 
     character.w = CELL_SIZE;
     character.h = CELL_SIZE;
@@ -137,6 +137,8 @@ int main(void)
     int grabbing = 0;
     int grx, gry;
     int mouse_x, mouse_y;
+    int grabbed_cell = 0;
+    int grabbed_old_index = 0;
 
     while (!close)
     {
@@ -150,38 +152,31 @@ int main(void)
                 close = 1;
                 break;
             case SDL_MOUSEBUTTONDOWN:
-                if (CHECKCOL_XY_XYXY(mouse_x, mouse_y, character.x, character.y, character.x + CELL_SIZE, character.y + CELL_SIZE))
+                if (grid[GET_CI_XY(mouse_x, mouse_y)] != 0)
                 {
                     grabbing = 1;
-                    grx = mouse_x - character.x;
-                    gry = mouse_y - character.y;
+                    grx = mouse_x - FIT_POS(mouse_x);
+                    gry = mouse_y - FIT_POS(mouse_y);
+                    grabbed_old_index = GET_CI_XY(mouse_x, mouse_y);
+                    grabbed_cell = grid[grabbed_old_index];
+                    chartex = cell_map[grabbed_cell];
+                    grid[grabbed_old_index] = 0;
                 }
                 break;
             case SDL_MOUSEBUTTONUP:
+                if (grabbing)
+                {
+                    if (grid[GET_CI_XY(mouse_x, mouse_y)] != 0)
+                    {
+                        grid[grabbed_old_index] = grid[GET_CI_XY(mouse_x, mouse_y)];
+                    }
+                    grid[GET_CI_XY(mouse_x, mouse_y)] = grabbed_cell;
+                    grabbed_cell = 0;
+                    grabbed_old_index = 0;
+                    chartex = NULL;
+                }
                 grabbing = 0;
                 break;
-            case SDL_KEYDOWN:
-                switch (event.key.keysym.scancode)
-                {
-                case SDL_SCANCODE_W:
-                case SDL_SCANCODE_UP:
-                    character.y -= CELL_SIZE;
-                    break;
-                case SDL_SCANCODE_A:
-                case SDL_SCANCODE_LEFT:
-                    character.x -= CELL_SIZE;
-                    break;
-                case SDL_SCANCODE_S:
-                case SDL_SCANCODE_DOWN:
-                    character.y += CELL_SIZE;
-                    break;
-                case SDL_SCANCODE_D:
-                case SDL_SCANCODE_RIGHT:
-                    character.x += CELL_SIZE;
-                    break;
-                default:
-                    break;
-                }
             }
         }
 
@@ -206,12 +201,6 @@ int main(void)
         else if (character.y + character.h > WINDOW_HEIGHT)
         {
             character.y = WINDOW_HEIGHT - character.h;
-        }
-
-        if (!grabbing)
-        {
-            character.x = FIT_POS(character.x + (CELL_SIZE / 2));
-            character.y = FIT_POS(character.y + (CELL_SIZE / 2));
         }
 
         SDL_SetRenderDrawColor(rend, 41, 41, 41, 255);
