@@ -16,6 +16,16 @@
     <https://www.gnu.org/licenses/>.
 */
 
+/*
+TODO: Parse V1 levels
+
+Example:
+V1;20;20;;0.0.1.19,3.0.2.19,1.0.3.19,2.0.4.19,5.0.5.19,4.0.6.19,7.0.7.19,8.0.8.19,6.0.9.19;;
+(20x20, first cell is empty, the other 9 cells go as GENERATOR_CELL, MOVER_CELL, ROTATOR_CELL_CW,
+ROTATOR_CELL_CCW, PUSH_CELL, SLIDE_CELL, ENEMY_CELL, TRASH_CELL, IMMOBILE_CELL, the other cells
+are empty)
+*/
+
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
