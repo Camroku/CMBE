@@ -38,6 +38,7 @@ level_title: Title of the level
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_timer.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "cmbe.h"
 #include <unistd.h>
 
@@ -135,8 +136,8 @@ int main(void)
     cell.h = CELL_SIZE;
 
     // Grid
-    int grid[GRID_WIDTH * GRID_HEIGHT];
-    memset(grid, 0, GRID_WIDTH * GRID_HEIGHT * sizeof(int));
+    char grid[GRID_WIDTH * GRID_HEIGHT];
+    memset(grid, 0, GRID_WIDTH * GRID_HEIGHT * sizeof(char));
 
     // For testing
     grid[0] = 0;
@@ -150,12 +151,13 @@ int main(void)
     grid[8] = 8;
     grid[9] = 9;
 
-    int close = 0;
-    int grabbing = 0;
+    bool close = false;
+    bool grabbing = false;
     int grx, gry;
     int mouse_x, mouse_y;
-    int grabbed_cell = 0;
-    int grabbed_old_index = 0;
+    char grabbed_cell = 0;
+    char grabbed_rot = 0;
+    char grabbed_old_index = 0;
 
     while (!close)
     {
@@ -166,18 +168,19 @@ int main(void)
             switch (event.type)
             {
             case SDL_QUIT:
-                close = 1;
+                close = true;
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (grid[GET_CI_XY(mouse_x, mouse_y)] != 0)
                 {
-                    grabbing = 1;
+                    grabbing = true;
                     grx = mouse_x - FIT_POS(mouse_x);
                     gry = mouse_y - FIT_POS(mouse_y);
                     grabbed_old_index = GET_CI_XY(mouse_x, mouse_y);
-                    grabbed_cell = grid[grabbed_old_index];
-                    chartex = cell_map[grabbed_cell];
-                    grid[grabbed_old_index] = 0;
+                    grabbed_cell = grid[(int)grabbed_old_index] & 0b00111111;
+                    grabbed_rot = grid[(int)grabbed_old_index] >> 6;
+                    chartex = cell_map[(int)grabbed_cell];
+                    grid[(int)grabbed_old_index] = 0;
                 }
                 break;
             case SDL_MOUSEBUTTONUP:
@@ -185,14 +188,35 @@ int main(void)
                 {
                     if (grid[GET_CI_XY(mouse_x, mouse_y)] != 0)
                     {
-                        grid[grabbed_old_index] = grid[GET_CI_XY(mouse_x, mouse_y)];
+                        grid[(int)grabbed_old_index] = grid[GET_CI_XY(mouse_x, mouse_y)];
                     }
-                    grid[GET_CI_XY(mouse_x, mouse_y)] = grabbed_cell;
+                    grid[GET_CI_XY(mouse_x, mouse_y)] = grabbed_cell | (grabbed_rot << 6);
                     grabbed_cell = 0;
                     grabbed_old_index = 0;
+                    grabbed_rot = 0;
                     chartex = NULL;
                 }
                 grabbing = 0;
+                break;
+            case SDL_KEYDOWN:
+                if (event.key.keysym.scancode == SDL_SCANCODE_Q)
+                {
+                    if (grabbing)
+                    {
+                        grabbed_rot--;
+                        if (grabbed_rot == -1)
+                            grabbed_rot = 3;
+                    }
+                }
+                if (event.key.keysym.scancode == SDL_SCANCODE_E)
+                {
+                    if (grabbing)
+                    {
+                        grabbed_rot++;
+                        if (grabbed_rot == 4)
+                            grabbed_rot = 0;
+                    }
+                }
                 break;
             }
         }
@@ -231,15 +255,16 @@ int main(void)
             cell.x = 0;
             for (j = 0; j < GRID_WIDTH; j++)
             {
-                SDL_RenderCopy(rend, cell_map[grid[j + i * GRID_WIDTH]], NULL, &cell);
+                SDL_RenderCopyEx(rend, cell_map[(int)grid[j + i * GRID_WIDTH] & 0b00111111], NULL, &cell, 90 * (grid[j + i * GRID_WIDTH] >> 6), NULL, SDL_FLIP_NONE);
                 cell.x += cell.w;
             }
             cell.y += cell.h;
         }
 
-        SDL_RenderCopy(rend, chartex, NULL, &character);
+        SDL_RenderCopyEx(rend, chartex, NULL, &character, 90 * grabbed_rot, NULL, SDL_FLIP_NONE);
         SDL_RenderPresent(rend);
-        if (FPS_LIMIT) SDL_Delay(1000 / FPS_LIMIT); // FPS limit
+        if (FPS_LIMIT)
+            SDL_Delay(1000 / FPS_LIMIT); // FPS limit
     }
 
     SDL_DestroyTexture(chartex);
